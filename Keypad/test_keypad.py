@@ -21,8 +21,17 @@ if __name__ == '__main__':
 
 	port_init()  # Init PortC for keypad
 
-	tim = Timer(4, freq=50)  # create a timer object using timer 4 - trigger at 50Hz
-	tim.callback(scan_timer_callback)  # set the callback to keypad-scanner
+	tim = Timer(5, freq=100)            # create a timer object using timer 5 - trigger at 50Hz
+	tim.callback(scan_timer_callback)   # set the callback to keypad-scanner
+
+	# Todo: why do we sometimes get: 'scan_keys()' not defined? in the callback when Timer 4 or 5 is used ?
+	''' scan_keys: ['9', '9'] 521
+		uncaught exception in Timer(4) interrupt handler
+		NameError: name 'scan_keys' is not defined
+		scan_keys: ['7', '', '9', '5', '6', ''] 1285
+		Traceback (most recent call last):
+		  File "test_keypad.py", line 48, in <module>
+	'''
 
 	fifo = FIFO(key_buf)  # FIFO-object with global buffer
 

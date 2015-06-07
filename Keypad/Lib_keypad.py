@@ -16,26 +16,26 @@ key_flag    = 0
 key_buf     = array.array('i', [0]*25)      # Room for 20 key presses/releases"""
 
 # Constants
-NONE = 0  # No key pressed
-NEW = 3  # key_flag = 3 means it's debounced and New
-USED = 4  # key_flag = 4 means consumer has received symbol (Not New anymore)
-DEL_CNT = const(100)  # Delay when scanning before reading (≈4 µs)
+NONE        = 0             # No key pressed
+NEW         = 3             # key_flag = 3 means it's debounced and New
+USED        = 4             # key_flag = 4 means consumer has received symbol (Not New anymore)
+DEL_CNT     = const(100)    # Delay when scanning before reading (≈4 µs)
 
 
 def port_init():
 	""" Setup and Init Pins used in scan_keys; GPIOC used. """
 
 	# Rows (Pull-ups inverted logic)
-	pin0 = Pin("C0", Pin.IN, Pin.PULL_UP)  # C0–C3 inputs for reading 4 rows from keypad (inverted logic)
+	pin0 = Pin("C0", Pin.IN, Pin.PULL_UP)       # C0–C3 inputs for reading 4 rows from keypad (inverted logic)
 	pin1 = Pin("C1", Pin.IN, Pin.PULL_UP)
 	pin2 = Pin("C2", Pin.IN, Pin.PULL_UP)
 	pin3 = Pin("C3", Pin.IN, Pin.PULL_UP)
 
 	# Columns (One column active (low) at the time) Open drain allows threading (OR-function without diodes)
-	pin4 = Pin("C4", Pin.OUT_OD, Pin.PULL_UP)  # C4–C6 outputs for driving columns low one at the time
+	pin4 = Pin("C4", Pin.OUT_OD, Pin.PULL_UP)   # C4–C6 outputs for driving columns low one at the time
 	pin5 = Pin("C5", Pin.OUT_OD, Pin.PULL_UP)
 	pin6 = Pin("C6", Pin.OUT_OD, Pin.PULL_UP)
-	pin7 = Pin("C7", Pin.OUT_PP)  # C7 used for timimg/debug: set low while scanning
+	pin7 = Pin("C7", Pin.OUT_PP)                # C7 used for timimg/debug: set low while scanning
 
 	pin4.high()
 	pin5.high()
@@ -58,22 +58,22 @@ def scan_keys():
 			4 of 8 bits each used for rowNr (1(toprow), 2, 4 or 8) for pressed key(s)
 	"""
 	# r7 -> GPIOC base address
-	movwt(r7, stm.GPIOC)  # r7 -> Base of PortC
+	movwt(r7, stm.GPIOC)            # r7 -> Base of PortC
 	# First check if ANY key pressed
-	mov(r1, 0b01110000 + 0b10000000)  # All columns + C7 as indicator
+	mov(r1, 0b01110000 + 0b10000000) # All columns + C7 as indicator
 	strh(r1, [r7, stm.GPIO_BSRRH])  # (Re)set ALL Columns + C7 low (active)
 
 	# Short delay; do some house keeping before reading
 	# Prepare for inverting and masking col- and key-bits
-	mov(r6, 0b10000000)  # Prepare for setting C7 high at exit
-	mov(r5, 8)  # r5 = nr shifts for lsl
+	mov(r6, 0b10000000)             # Prepare for setting C7 high at exit
+	mov(r5, 8)                      # r5 = nr shifts for lsl
 	mov(r4, 0b01111111)
-	mov(r3, 0b1111)  # Mask for key readout bits
+	mov(r3, 0b1111)                 # Mask for key readout bits
 
-	ldrb(r0, [r7, stm.GPIO_IDR])  # Read 8 bits from input to r0
+	ldrb(r0, [r7, stm.GPIO_IDR])    # Read 8 bits from input to r0
 	eor(r0, r4)
-	and_(r0, r3)  # Keep only key bits
-	beq(EXIT_NO_KEY)  # No key pressed, exit with r0 = 0
+	and_(r0, r3)                    # Keep only key bits
+	beq(EXIT_NO_KEY)                # No key pressed, exit with r0 = 0
 
 	mov(r1, 0b01100000)
 	strh(r1, [r7, stm.GPIO_BSRRL])  # Set two Columns high and keep C4 low
@@ -84,10 +84,10 @@ def scan_keys():
 	sub(r2, r2, 1)
 	bne(delay_0)
 
-	ldrb(r0, [r7, stm.GPIO_IDR])  # Read 8 bits from col0 keys to r0
+	ldrb(r0, [r7, stm.GPIO_IDR])    # Read 8 bits from col0 keys to r0
 	eor(r0, r4)
-	and_(r0, r3)  # Keep only key bits
-	lsl(r0, r5)  # Make room for next col
+	and_(r0, r3)                    # Keep only key bits
+	lsl(r0, r5)                     # Make room for next col
 
 	mov(r1, 0b01010000)
 	strh(r1, [r7, stm.GPIO_BSRRL])  # Set two Columns high
@@ -100,11 +100,11 @@ def scan_keys():
 	sub(r2, r2, 1)
 	bne(delay_1)
 
-	ldrb(r1, [r7, stm.GPIO_IDR])  # Read 8 bits from col1 keys to r1
+	ldrb(r1, [r7, stm.GPIO_IDR])    # Read 8 bits from col1 keys to r1
 	eor(r1, r4)
-	and_(r1, r3)  # Keep only key bits
-	orr(r0, r1)  # Add data to previous col
-	lsl(r0, r5)  # Make room for next col
+	and_(r1, r3)                    # Keep only key bits
+	orr(r0, r1)                     # Add data to previous col
+	lsl(r0, r5)                     # Make room for next col
 
 	mov(r2, 0b00110000)
 	strh(r2, [r7, stm.GPIO_BSRRL])  # Set two Columns high
@@ -117,10 +117,10 @@ def scan_keys():
 	sub(r2, r2, 1)
 	bne(delay_2)
 
-	ldrb(r2, [r7, stm.GPIO_IDR])  # Read 8 bits from col2 keys to r2
+	ldrb(r2, [r7, stm.GPIO_IDR])    # Read 8 bits from col2 keys to r2
 	eor(r2, r4)
-	and_(r2, r3)  # Keep only key bits
-	orr(r0, r2)  # Add data to previous cols
+	and_(r2, r3)                    # Keep only key bits
+	orr(r0, r2)                     # Add data to previous cols
 	''' r0 now contains all 3 key-data; col0 as MSB and col2 as LSB '''
 	label(EXIT_NO_KEY)
 	strh(r6, [r7, stm.GPIO_BSRRL])  # Set C7 high to signal End-of-scan
@@ -132,30 +132,30 @@ def scan_keys():
 #
 @micropython.native
 def scan_timer_callback(timer):  # Called @50–100 Hz by Timer
-	"""Callback for Timer. Scan keypad and debaounce. Takes 13 / 26 µs [no key] / [key pressed].
-	Returns key
-		key_debounce:
+	"""Callback for Timer. Scan keypad and debounce. Takes 13 / 26 µs [no key] / [key pressed].
+	Returns key(s) in key_buf (FIFO)
+		key_debounce: key_flag:
 			0 : key changed (pressed or released)
 			1 : 1:st debounce cycle
 			2 : 2:nd debounce cycle
 			3 : Valid (still pressed) = NEW (export)
-			4 : Acknowledged (USED by consumer) and not considered new anymore
+			4 : Acknowledged (set to USED by consumer) and not considered new anymore
 	"""
 
 	global key_last, key_old, key_flag, key_buf
 
-	key_last = scan_keys()  # Call Assembler routine
+	key_last = scan_keys()      # Call Assembler routine
 	if key_last == key_old:
-		if key_flag == 2:  # EXPORT key
+		if key_flag == 2:       # EXPORT key
 			fifo.put(key_buf, key_last)
-			key_flag = NEW  # = 3 One loop more so we don't come back here (When Consumer clears key_flag)
+			key_flag = NEW      # = 3 One loop more so we don't come back here (When Consumer clears key_flag)
 		elif key_flag < 2:
-			key_flag += 1  # One loop more
+			key_flag += 1       # One loop more
 		else:
-			pass  # Do nothing: Wait until keys change
+			pass                # Do nothing: Wait until keys change
 	else:
-		key_flag = NONE  # = 0 New key or key released
-		key_old = key_last  # Key changed!: wait till next scans and check if stable
+		key_flag = NONE         # = 0 New key or key released
+		key_old = key_last      # Key changed!: wait till next scans and check if stable
 
 
 @micropython.native
@@ -179,7 +179,7 @@ def key_to_symbol(key):
 		for k, v in c_dict.items():
 			if k == rc:
 				_list.append(v)
-		if _list:  # If more than 2 keys pressed in same col: _list = []
+		if _list:                       # If more than 2 keys pressed in same col: _list = []
 			_st = _list.pop()
 		else:
 			_st = ''
@@ -187,12 +187,12 @@ def key_to_symbol(key):
 
 	''' Decode key to symbol(s) '''
 	if not key:
-		return ''  # No key pressed: return ''
+		return ''                       # No key pressed: return ''
 	else:
 		symb = []
-		rc0 = key >> 16  # Get key from col0
+		rc0 = key >> 16                 # Get key from col0
 		if rc0:
-			l0 = _2_symbol(rc0, COL0)
+			l0 = _2_symbol(key >> 16, COL0)     # Get key from col0
 			symb.append(l0)
 		rc1 = (key >> 8) & 0xF
 		if rc1:
@@ -207,19 +207,26 @@ def key_to_symbol(key):
 
 if __name__ == '__main__':
 
-	port_init()  # Init PortC for keypad
+	port_init()                         # Init PortC for keypad
 
-	tim = Timer(4, freq=50)  # create a timer object using timer 4 - trigger at 50Hz
-	tim.callback(scan_timer_callback)  # set the callback to keypad-scanner
+	# Todo: why do we sometimes get: 'scan_keys()' not defined? in the callback when Timer 4 or 5 is used ?
+	''' scan_keys: ['9', '9'] 521
+		uncaught exception in Timer(4) interrupt handler
+		NameError: name 'scan_keys' is not defined
+		scan_keys: ['7', '', '9', '5', '6', ''] 1285
+		Traceback (most recent call last):
+		  File "test_keypad.py", line 48, in <module>
+	'''
+	tim = Timer(5, freq=50)             # create a timer object using timer 5 - trigger at 50Hz
+	tim.callback(scan_timer_callback)   # set the callback to keypad-scanner
 
-	fifo = FIFO(key_buf)  # FIFO-object with global buffer
+	fifo = FIFO(key_buf)                # FIFO-object with global buffer
 
 	while True:
-		""" Om consumern är långsammare än scan_keys, kan man missa korta tryckningar.
-		Alltså måste avstudsning och key_flag sättas i callback-rutinen. Nya avstudsade
-		keys bör exporteras via en (kort) ringbuffer eller kö.
+		""" Since the consumer probably is slower than scan_keys, short key presses will be missed.
+		Debouncing is done in the callback as well as setting key_flag (status).
 
-		Avkodningen kan ske av consumern """
+		Decoding is done here in the consumer """
 
 		if key_flag == NEW:  # CONSUMER
 			symbol = []
@@ -228,7 +235,7 @@ if __name__ == '__main__':
 				data = fifo.get_all(key_buf)
 				for i in data:
 					symbol.append(key_to_symbol(i))
-				key_flag = USED  # Acknowledge as taken
+				key_flag = USED         # Acknowledge as taken
 				delta = elapsed_micros(start)
 			print("scan_keys:", symbol, delta)
 
@@ -236,5 +243,5 @@ if __name__ == '__main__':
 				break
 		delay(200)
 
-	tim.callback(None)  # Stop callback
+	tim.callback(None)                  # Stop callback
 	print()
