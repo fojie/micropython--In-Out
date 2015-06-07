@@ -1,4 +1,8 @@
-__author__ = 'folke'
+"""Functions for scanning keypad, debouncing and decoding pressed keys.
+
+Uses a callback for timer 4 @50–100 Hz and in-line assembler for the scan function
+
+2015-06-07 by Folke Berglund """
 
 import stm
 from pyb import Pin, delay, micros, elapsed_micros, Timer
@@ -44,7 +48,7 @@ def scan_keys():
 	""" Scan All 3 columns for pressed/released keys.
 
 	Calling function takes ≈ 5 / 17 µs when [no key] / [key pressed]
-	Registers usaage;
+	Register usage;
 		r7 -> GPIOC base
 		r6 = mask for GPIO_C7 used as indicator (low while scanning)
 		r5 = 8 used for shifts lsl
